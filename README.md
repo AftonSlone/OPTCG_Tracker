@@ -7,22 +7,27 @@ A modern .NET Web API for tracking One Piece Card Game match results with OAuth 
 - **OAuth Authentication**: Support for Google, GitHub, Microsoft, and Discord login
 - **JWT Tokens**: Secure token-based authentication
 - **Entity Framework Core**: Database-first approach with SQL Server
-- **Docker Support**: Containerized application and database
+- **Layered Architecture**: Separated Core, Data, and API layers
 - **RESTful API**: Clean endpoints for user management
 
 ## Tech Stack
 
 - **.NET 8** ASP.NET Core Web API
-- **SQL Server** with Entity Framework Core
+- **SQL Server LocalDB** with Entity Framework Core
 - **JWT Authentication** for secure API access
-- **Docker** & **Docker Compose** for containerization
 - **OAuth 2.0** for third-party authentication
+- **Swagger/OpenAPI** for API documentation
+
+## Project Structure
+
+- **OPTCG.Tracker.API** - Web API layer with controllers and configuration
+- **OPTCG.Tracker.Core** - Domain models and business logic services
+- **OPTCG.Tracker.Data** - Database context and Entity Framework migrations
 
 ## Prerequisites
 
 - .NET 8 SDK
-- Docker Desktop (for containerized development)
-- SQL Server (for local development) or use Docker
+- SQL Server LocalDB (included with Visual Studio or available separately)
 
 ## Setup Instructions
 
@@ -64,36 +69,32 @@ Update `appsettings.json` with your OAuth provider credentials:
 
 ### 3. Database Setup
 
-#### Option A: Docker (Recommended)
+The project uses SQL Server LocalDB by default. To set up the database:
+
+1. Ensure SQL Server LocalDB is installed
+2. Run database migration:
 ```bash
-docker-compose up --build
+cd OPTCG.Tracker.API
+dotnet ef database update
 ```
 
-#### Option B: Local SQL Server
-1. Install SQL Server Express or LocalDB
-2. Update connection string in `appsettings.json`
-3. Run database migration:
-```bash
-dotnet ef database update
+The connection string in `appsettings.json` is configured for LocalDB:
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=OPTCGTracker;Trusted_Connection=true;MultipleActiveResultSets=true"
+}
 ```
 
 ### 4. Run the API
 
-#### With Docker:
-```bash
-docker-compose up
-```
-
-#### Locally:
 ```bash
 cd OPTCG.Tracker.API
 dotnet run
 ```
 
 The API will be available at:
-- HTTP: `http://localhost:5000`
-- HTTPS: `https://localhost:5001`
-- OpenAPI/Swagger: `https://localhost:5001/openapi`
+- HTTP: `http://localhost:5126`
+- Swagger UI: `http://localhost:5126/swagger`
 
 ## API Endpoints
 
@@ -128,23 +129,12 @@ Supported providers for `{provider}` parameter:
 
 ### Entity Framework Migrations
 ```bash
-# Create new migration
-dotnet ef migrations add MigrationName
+# Create new migration (run from OPTCG.Tracker.API directory)
+cd OPTCG.Tracker.API
+dotnet ef migrations add MigrationName --project ../OPTCG.Tracker.Data
 
 # Apply migration
-dotnet ef database update
-```
-
-### Docker Development
-```bash
-# Build and run containers
-docker-compose up --build
-
-# View logs
-docker-compose logs -f
-
-# Stop containers
-docker-compose down
+dotnet ef database update --project ../OPTCG.Tracker.Data
 ```
 
 ## Security Notes
