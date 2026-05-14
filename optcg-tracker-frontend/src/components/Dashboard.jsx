@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Dashboard.css';
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -12,14 +11,11 @@ function Dashboard() {
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
-    // Get token from URL
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
     
     if (tokenFromUrl) {
-      // Store token in localStorage
       localStorage.setItem('jwtToken', tokenFromUrl);
-      // Clear token from URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
     
@@ -114,74 +110,107 @@ function Dashboard() {
   };
 
   return (
-    <div className="container">
-      <div className="success-icon">
-        <svg viewBox="0 0 24 24">
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-        </svg>
-      </div>
-      
-      <h1>Authentication Successful!</h1>
-      <p>You are now logged in to OPTCG Tracker</p>
-      
-      {loading && (
-        <div className="loading">
-          <div className="spinner"></div>
-          <span>Loading your profile...</span>
+    <div className="flex items-center justify-center min-h-screen px-4 pt-20">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 max-w-lg w-full">
+        <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg width="50" height="50" viewBox="0 0 24 24" fill="white">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
         </div>
-      )}
-      
-      {user && (
-        <div className="user-info">
-          <h3>User Profile</h3>
-          <p><strong>Display Name:</strong> {user.displayName || user.username}</p>
-          <p><strong>Username:</strong> {user.username}</p>
-          <p><strong>Email:</strong> {user.email}</p>
-          <p><strong>OAuth Provider:</strong> {user.oAuthProvider}</p>
-          <p><strong>Member Since:</strong> {formatDate(user.createdDate)}</p>
-          {user.lastLoginDate && (
-            <p><strong>Last Login:</strong> {formatDate(user.lastLoginDate)}</p>
-          )}
-          
-          <div className="display-name-edit">
-            {editingDisplayName ? (
-              <div className="edit-form">
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="Enter display name"
-                  maxLength="100"
-                />
-                <button 
-                  className="save-btn" 
-                  onClick={saveDisplayName}
-                  disabled={updating}
-                >
-                  {updating ? 'Saving...' : 'Save'}
-                </button>
-                <button 
-                  className="cancel-btn" 
-                  onClick={cancelEditingDisplayName}
-                  disabled={updating}
-                >
-                  Cancel
-                </button>
-              </div>
-            ) : (
-              <button className="edit-btn" onClick={startEditingDisplayName}>
-                Edit Display Name
-              </button>
-            )}
+        
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 text-center">
+          Welcome Back!
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 text-center mb-8">
+          You are now logged in to OPTCG Tracker
+        </p>
+        
+        {loading && (
+          <div className="flex items-center justify-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="w-5 h-5 border-3 border-gray-300 border-t-green-500 rounded-full animate-spin"></div>
+            <span>Loading your profile...</span>
           </div>
-        </div>
-      )}
-      
-      {error && (
-        <div className="error">{error}</div>
-      )}
-      
-      <button className="logout-btn" onClick={logout}>Logout</button>
+        )}
+        
+        {user && (
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6 mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">User Profile</h2>
+            <div className="space-y-3">
+              <p className="text-gray-700 dark:text-gray-300">
+                <span className="font-semibold">Display Name:</span> {user.displayName || user.username}
+              </p>
+              <p className="text-gray-700 dark:text-gray-300">
+                <span className="font-semibold">Username:</span> {user.username}
+              </p>
+              <p className="text-gray-700 dark:text-gray-300">
+                <span className="font-semibold">Email:</span> {user.email}
+              </p>
+              <p className="text-gray-700 dark:text-gray-300">
+                <span className="font-semibold">OAuth Provider:</span> {user.oAuthProvider}
+              </p>
+              <p className="text-gray-700 dark:text-gray-300">
+                <span className="font-semibold">Member Since:</span> {formatDate(user.createdDate)}
+              </p>
+              {user.lastLoginDate && (
+                <p className="text-gray-700 dark:text-gray-300">
+                  <span className="font-semibold">Last Login:</span> {formatDate(user.lastLoginDate)}
+                </p>
+              )}
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+              {editingDisplayName ? (
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="Enter display name"
+                    maxLength="100"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={saveDisplayName}
+                      disabled={updating}
+                      className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {updating ? 'Saving...' : 'Save'}
+                    </button>
+                    <button 
+                      onClick={cancelEditingDisplayName}
+                      disabled={updating}
+                      className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={startEditingDisplayName}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-semibold transition-all hover:scale-105"
+                >
+                  Edit Display Name
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-4 rounded-xl mb-6">
+            {error}
+          </div>
+        )}
+        
+        <button 
+          onClick={logout}
+          className="w-full bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-xl font-semibold transition-all hover:scale-105 shadow-md"
+        >
+          Logout
+        </button>
+      </div>
     </div>
   );
 }
