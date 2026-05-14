@@ -63,10 +63,6 @@ function Login() {
           <pre>{token}</pre>
         </div>
       )}
-      
-      <div className="note">
-        <strong>Note:</strong> Make sure to configure OAuth credentials in appsettings.json before testing.
-      </div>
     </div>
   );
 }
