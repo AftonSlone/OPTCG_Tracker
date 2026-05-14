@@ -67,16 +67,16 @@ p {
   background: #4285F4;
 }
 
-.github {
-  background: #333;
-}
-
 .microsoft {
   background: #00A4EF;
 }
 
 .discord {
   background: #7289DA;
+}
+
+.twitch {
+  background: #9146FF;
 }
 
 .token-display {

@@ -4,7 +4,7 @@ A modern .NET Web API for tracking One Piece Card Game match results with OAuth 
 
 ## Features
 
-- **OAuth Authentication**: Support for Google, GitHub, Microsoft, and Discord login
+- **OAuth Authentication**: Support for Google, Microsoft, Discord, and Twitch login
 - **JWT Tokens**: Secure token-based authentication
 - **Entity Framework Core**: Database-first approach with SQL Server
 - **Layered Architecture**: Separated Core, Data, and API layers
@@ -52,12 +52,12 @@ Create a `.env` file in the `OPTCG.Tracker.API` directory with your OAuth provid
 ```env
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-GITHUB_CLIENT_ID=your-github-client-id
-GITHUB_CLIENT_SECRET=your-github-client-secret
 MICROSOFT_CLIENT_ID=your-microsoft-client-id
 MICROSOFT_CLIENT_SECRET=your-microsoft-client-secret
 DISCORD_CLIENT_ID=your-discord-client-id
 DISCORD_CLIENT_SECRET=your-discord-client-secret
+TWITCH_CLIENT_ID=your-twitch-client-id
+TWITCH_CLIENT_SECRET=your-twitch-client-secret
 ```
 
 The `.env` file is already included in `.gitignore` to prevent committing sensitive credentials.
@@ -126,9 +126,9 @@ The API will be available at:
 ### OAuth Providers
 Supported providers for `{provider}` parameter:
 - `Google`
-- `GitHub` 
 - `Microsoft`
 - `Discord`
+- `Twitch`
 
 ## Database Schema
 

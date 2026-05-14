@@ -202,6 +202,11 @@ namespace OPTCG.Tracker.API.Controllers
                     }
                     providerUserId = claims.FirstOrDefault(c => c.Type == "id")?.Value ?? "";
                     break;
+                case "Twitch":
+                    email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? "";
+                    username = claims.FirstOrDefault(c => c.Type == "username")?.Value ?? "";
+                    providerUserId = claims.FirstOrDefault(c => c.Type == "id")?.Value ?? "";
+                    break;
             }
 
             return (email, username, providerUserId);

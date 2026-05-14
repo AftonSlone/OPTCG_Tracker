@@ -85,19 +85,50 @@ if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientS
     });
 }
 
-// Add GitHub OAuth if credentials are configured
-var githubClientId = Environment.GetEnvironmentVariable("GITHUB_CLIENT_ID") ?? authSettings["GitHub:ClientId"];
-var githubClientSecret = Environment.GetEnvironmentVariable("GITHUB_CLIENT_SECRET") ?? authSettings["GitHub:ClientSecret"];
-if (!string.IsNullOrEmpty(githubClientId) && !string.IsNullOrEmpty(githubClientSecret))
+// Add Twitch OAuth if credentials are configured
+var twitchClientId = Environment.GetEnvironmentVariable("TWITCH_CLIENT_ID") ?? authSettings["Twitch:ClientId"];
+var twitchClientSecret = Environment.GetEnvironmentVariable("TWITCH_CLIENT_SECRET") ?? authSettings["Twitch:ClientSecret"];
+if (!string.IsNullOrEmpty(twitchClientId) && !string.IsNullOrEmpty(twitchClientSecret))
 {
-    authenticationBuilder.AddOAuth("GitHub", options =>
+    authenticationBuilder.AddOAuth("Twitch", options =>
     {
-        options.ClientId = githubClientId;
-        options.ClientSecret = githubClientSecret;
-        options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
-        options.TokenEndpoint = "https://github.com/login/oauth/access_token";
-        options.UserInformationEndpoint = "https://api.github.com/user";
-        options.CallbackPath = "/signin-github";
+        options.ClientId = twitchClientId;
+        options.ClientSecret = twitchClientSecret;
+        options.AuthorizationEndpoint = "https://id.twitch.tv/oauth2/authorize";
+        options.TokenEndpoint = "https://id.twitch.tv/oauth2/token";
+        options.UserInformationEndpoint = "https://api.twitch.tv/helix/users";
+        options.CallbackPath = "/signin-twitch";
+        options.Scope.Add("user:read:email");
+        options.SaveTokens = true;
+        
+        options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
+        {
+            OnCreatingTicket = async context =>
+            {
+                using var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, context.Options.UserInformationEndpoint);
+                request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+                request.Headers.Add("Client-Id", twitchClientId);
+                
+                using var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
+                response.EnsureSuccessStatusCode();
+                
+                var content = await response.Content.ReadAsStringAsync();
+                var user = System.Text.Json.JsonDocument.Parse(content);
+                
+                var data = user.RootElement.GetProperty("data")[0];
+                var id = data.GetProperty("id").GetString();
+                var login = data.GetProperty("login").GetString();
+                var email = data.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : "";
+                
+                context.Identity.AddClaim(new System.Security.Claims.Claim("id", id));
+                context.Identity.AddClaim(new System.Security.Claims.Claim("username", login));
+                if (!string.IsNullOrEmpty(email))
+                {
+                    context.Identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, email));
+                }
+            }
+        };
     });
 }
 
