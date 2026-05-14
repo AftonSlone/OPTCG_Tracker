@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OPTCG.Tracker.Data;
 using OPTCG.Tracker.Core.Models;
+using OPTCG.Tracker.API.DTOs;
 
 namespace OPTCG.Tracker.API.Controllers
 {
@@ -104,11 +105,5 @@ namespace OPTCG.Tracker.API.Controllers
                 user.OAuthProvider
             });
         }
-    }
-
-    public class UpdateProfileRequest
-    {
-        public string Username { get; set; } = string.Empty;
-        public string DisplayName { get; set; } = string.Empty;
     }
 }

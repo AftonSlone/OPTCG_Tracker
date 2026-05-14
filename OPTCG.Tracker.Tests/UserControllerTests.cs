@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using OPTCG.Tracker.API.Controllers;
+using OPTCG.Tracker.API.DTOs;
 using OPTCG.Tracker.Core.Models;
 using OPTCG.Tracker.Data;
 using System.IdentityModel.Tokens.Jwt;
@@ -136,25 +137,119 @@ namespace OPTCG.Tracker.Tests
                 HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
             };
 
-            // Skip this test for now due to type mismatch issues with nested class
-            // TODO: Fix UpdateProfileRequest type resolution
-            return;
+            var request = new UpdateProfileRequest
+            {
+                Username = "newusername",
+                DisplayName = "New Display Name"
+            };
+
+            // Act
+            var result = await controller.UpdateProfile(request);
+
+            // Assert
+            Assert.IsType<UnauthorizedResult>(result);
         }
 
         [Fact]
         public async Task UpdateProfile_ReturnsBadRequest_WhenUsernameTaken()
         {
-            // Skip this test for now due to type mismatch issues with nested class
-            // TODO: Fix UpdateProfileRequest type resolution
-            return;
+            // Arrange
+            var context = GetInMemoryDbContext();
+            
+            var user1 = new User
+            {
+                Email = "user1@example.com",
+                Username = "user1",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google1"
+            };
+            var user2 = new User
+            {
+                Email = "user2@example.com",
+                Username = "user2",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google2"
+            };
+            
+            context.Users.AddRange(user1, user2);
+            await context.SaveChangesAsync();
+
+            var controller = new UserController(context);
+            
+            var claims = new[] { new Claim(ClaimTypes.NameIdentifier, user1.Id.ToString()) };
+            var identity = new ClaimsIdentity(claims);
+            var principal = new ClaimsPrincipal(identity);
+
+            controller.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
+            {
+                HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext
+                {
+                    User = principal
+                }
+            };
+
+            var request = new UpdateProfileRequest
+            {
+                Username = "user2", // Already taken by user2
+                DisplayName = "New Display Name"
+            };
+
+            // Act
+            var result = await controller.UpdateProfile(request);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.NotNull(badRequestResult.Value);
         }
 
         [Fact]
         public async Task UpdateProfile_UpdatesDisplayName_WhenValid()
         {
-            // Skip this test for now due to type mismatch issues with nested class
-            // TODO: Fix UpdateProfileRequest type resolution
-            return;
+            // Arrange
+            var context = GetInMemoryDbContext();
+            
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                DisplayName = "Old Name",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            
+            context.Users.Add(user);
+            await context.SaveChangesAsync();
+
+            var controller = new UserController(context);
+            
+            var claims = new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) };
+            var identity = new ClaimsIdentity(claims);
+            var principal = new ClaimsPrincipal(identity);
+
+            controller.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
+            {
+                HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext
+                {
+                    User = principal
+                }
+            };
+
+            var request = new UpdateProfileRequest
+            {
+                Username = "",
+                DisplayName = "New Display Name"
+            };
+
+            // Act
+            var result = await controller.UpdateProfile(request);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult.Value);
+
+            // Verify the update
+            var updatedUser = await context.Users.FindAsync(user.Id);
+            Assert.Equal("New Display Name", updatedUser.DisplayName);
         }
     }
 }
