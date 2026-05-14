@@ -6,11 +6,20 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.OAuth;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using DotNetEnv;
+
+// Load environment variables from .env file
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
+
+// Enable static files
+builder.Services.AddDirectoryBrowser();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -40,11 +49,13 @@ var authSettings = builder.Configuration.GetSection("Authentication");
 var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
 var key = Encoding.UTF8.GetBytes(secretKey);
 
-builder.Services.AddAuthentication(options =>
+var authenticationBuilder = builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 })
+.AddCookie()
 .AddJwtBearer(options =>
 {
     options.RequireHttpsMetadata = false;
@@ -60,37 +71,95 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
-})
-.AddGoogle(options =>
-{
-    options.ClientId = authSettings["Google:ClientId"] ?? "";
-    options.ClientSecret = authSettings["Google:ClientSecret"] ?? "";
-})
-.AddOAuth("GitHub", options =>
-{
-    options.ClientId = authSettings["GitHub:ClientId"] ?? "";
-    options.ClientSecret = authSettings["GitHub:ClientSecret"] ?? "";
-    options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
-    options.TokenEndpoint = "https://github.com/login/oauth/access_token";
-    options.UserInformationEndpoint = "https://api.github.com/user";
-    options.CallbackPath = "/signin-github";
-    // Claim mapping will be handled manually in the callback
-})
-.AddMicrosoftAccount(options =>
-{
-    options.ClientId = authSettings["Microsoft:ClientId"] ?? "";
-    options.ClientSecret = authSettings["Microsoft:ClientSecret"] ?? "";
-})
-.AddOAuth("Discord", options =>
-{
-    options.ClientId = authSettings["Discord:ClientId"] ?? "";
-    options.ClientSecret = authSettings["Discord:ClientSecret"] ?? "";
-    options.AuthorizationEndpoint = "https://discord.com/oauth2/authorize";
-    options.TokenEndpoint = "https://discord.com/api/oauth2/token";
-    options.UserInformationEndpoint = "https://discord.com/api/users/@me";
-    options.CallbackPath = "/signin-discord";
-    // Claim mapping will be handled manually in the callback
 });
+
+// Add Google OAuth if credentials are configured
+var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID") ?? authSettings["Google:ClientId"];
+var googleClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET") ?? authSettings["Google:ClientSecret"];
+if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+{
+    authenticationBuilder.AddGoogle(options =>
+    {
+        options.ClientId = googleClientId;
+        options.ClientSecret = googleClientSecret;
+    });
+}
+
+// Add GitHub OAuth if credentials are configured
+var githubClientId = Environment.GetEnvironmentVariable("GITHUB_CLIENT_ID") ?? authSettings["GitHub:ClientId"];
+var githubClientSecret = Environment.GetEnvironmentVariable("GITHUB_CLIENT_SECRET") ?? authSettings["GitHub:ClientSecret"];
+if (!string.IsNullOrEmpty(githubClientId) && !string.IsNullOrEmpty(githubClientSecret))
+{
+    authenticationBuilder.AddOAuth("GitHub", options =>
+    {
+        options.ClientId = githubClientId;
+        options.ClientSecret = githubClientSecret;
+        options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
+        options.TokenEndpoint = "https://github.com/login/oauth/access_token";
+        options.UserInformationEndpoint = "https://api.github.com/user";
+        options.CallbackPath = "/signin-github";
+    });
+}
+
+// Add Microsoft OAuth if credentials are configured
+var microsoftClientId = Environment.GetEnvironmentVariable("MICROSOFT_CLIENT_ID") ?? authSettings["Microsoft:ClientId"];
+var microsoftClientSecret = Environment.GetEnvironmentVariable("MICROSOFT_CLIENT_SECRET") ?? authSettings["Microsoft:ClientSecret"];
+if (!string.IsNullOrEmpty(microsoftClientId) && !string.IsNullOrEmpty(microsoftClientSecret))
+{
+    authenticationBuilder.AddMicrosoftAccount(options =>
+    {
+        options.ClientId = microsoftClientId;
+        options.ClientSecret = microsoftClientSecret;
+    });
+}
+
+// Add Discord OAuth if credentials are configured
+var discordClientId = Environment.GetEnvironmentVariable("DISCORD_CLIENT_ID") ?? authSettings["Discord:ClientId"];
+var discordClientSecret = Environment.GetEnvironmentVariable("DISCORD_CLIENT_SECRET") ?? authSettings["Discord:ClientSecret"];
+if (!string.IsNullOrEmpty(discordClientId) && !string.IsNullOrEmpty(discordClientSecret))
+{
+    authenticationBuilder.AddOAuth("Discord", options =>
+    {
+        options.ClientId = discordClientId;
+        options.ClientSecret = discordClientSecret;
+        options.AuthorizationEndpoint = "https://discord.com/oauth2/authorize";
+        options.TokenEndpoint = "https://discord.com/api/oauth2/token";
+        options.UserInformationEndpoint = "https://discord.com/api/users/@me";
+        options.CallbackPath = "/signin-discord";
+        options.Scope.Add("identify");
+        options.Scope.Add("email");
+        options.SaveTokens = true;
+        
+        // Custom event handler to extract user info from token response
+        options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
+        {
+            OnCreatingTicket = async context =>
+            {
+                using var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Get, context.Options.UserInformationEndpoint);
+                request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", context.AccessToken);
+                
+                using var response = await context.Backchannel.SendAsync(request, context.HttpContext.RequestAborted);
+                response.EnsureSuccessStatusCode();
+                
+                var content = await response.Content.ReadAsStringAsync();
+                var user = System.Text.Json.JsonDocument.Parse(content);
+                
+                var id = user.RootElement.GetProperty("id").GetString();
+                var username = user.RootElement.GetProperty("username").GetString();
+                var discriminator = user.RootElement.GetProperty("discriminator").GetString();
+                var email = user.RootElement.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : "";
+                
+                context.Identity.AddClaim(new System.Security.Claims.Claim("id", id));
+                context.Identity.AddClaim(new System.Security.Claims.Claim("username", $"{username}#{discriminator}"));
+                if (!string.IsNullOrEmpty(email))
+                {
+                    context.Identity.AddClaim(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, email));
+                }
+            }
+        };
+    });
+}
 
 var app = builder.Build();
 
@@ -103,13 +172,26 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Use CORS
-app.UseCors("AllowAll");
-
-// Use authentication and authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Enable static files for React app
+app.UseStaticFiles();
+
+// Serve React app as SPA
+app.Use(async (context, next) =>
+{
+    if (!context.Request.Path.StartsWithSegments("/api") && 
+        !context.Request.Path.StartsWithSegments("/swagger") &&
+        !context.Request.Path.Value.Contains("."))
+    {
+        context.Response.ContentType = "text/html";
+        await context.Response.SendFileAsync(Path.Combine(builder.Environment.WebRootPath, "index.html"));
+        return;
+    }
+    await next();
+});
 
 app.Run();

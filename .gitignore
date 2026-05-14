@@ -361,3 +361,8 @@ FodyWeavers.xsd
 
 # Docker
 docker-compose.override.yml
+
+# Environment files with sensitive data
+.env
+.env.local
+.env.*.local

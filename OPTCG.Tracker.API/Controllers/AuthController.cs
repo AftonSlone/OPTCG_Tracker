@@ -6,6 +6,8 @@ using OPTCG.Tracker.Data;
 using OPTCG.Tracker.Core.Models;
 using OPTCG.Tracker.Core.Services;
 using System.Security.Claims;
+using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace OPTCG.Tracker.API.Controllers
 {
@@ -15,11 +17,13 @@ namespace OPTCG.Tracker.API.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IJwtTokenService _jwtTokenService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public AuthController(ApplicationDbContext context, IJwtTokenService jwtTokenService)
+        public AuthController(ApplicationDbContext context, IJwtTokenService jwtTokenService, IHttpClientFactory httpClientFactory)
         {
             _context = context;
             _jwtTokenService = jwtTokenService;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet("login/{provider}")]
@@ -50,8 +54,57 @@ namespace OPTCG.Tracker.API.Controllers
                 return BadRequest("No claims found");
             }
 
-            // Extract user information based on provider
-            var (email, username, providerUserId) = ExtractUserInfo(claims, provider);
+            var email = "";
+            var username = "";
+            var providerUserId = "";
+
+            // Debug: Log all claims for Discord
+            if (provider == "Discord")
+            {
+                Console.WriteLine("Discord Claims:");
+                foreach (var claim in claims)
+                {
+                    Console.WriteLine($"  {claim.Type}: {claim.Value}");
+                }
+
+                // For Discord, manually fetch user info from API using the token from the result
+                var accessToken = "";
+                if (authenticateResult.Properties?.Items != null && authenticateResult.Properties.Items.TryGetValue("access_token", out var tokenValue))
+                {
+                    accessToken = tokenValue?.ToString();
+                    Console.WriteLine($"Discord Access Token from Items: {accessToken?.Substring(0, Math.Min(20, accessToken?.Length ?? 0))}...");
+                }
+                
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    accessToken = authenticateResult.Properties?.GetTokenValue("access_token");
+                    Console.WriteLine($"Discord Access Token from GetTokenValue: {accessToken?.Substring(0, Math.Min(20, accessToken?.Length ?? 0))}...");
+                }
+                
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    var (discordEmail, discordUsername, discordId) = await GetDiscordUserInfoAsync(accessToken);
+                    Console.WriteLine($"Discord User Info - Email: {discordEmail}, Username: {discordUsername}, ID: {discordId}");
+                    if (!string.IsNullOrEmpty(discordEmail) && !string.IsNullOrEmpty(discordId))
+                    {
+                        email = discordEmail;
+                        username = discordUsername;
+                        providerUserId = discordId;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Discord access token is null or empty from both methods");
+                }
+            }
+            else
+            {
+                // Extract user information based on provider
+                var (providerEmail, providerUsername, providerId) = ExtractUserInfo(claims, provider);
+                email = providerEmail;
+                username = providerUsername;
+                providerUserId = providerId;
+            }
             
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(providerUserId))
             {
@@ -64,19 +117,35 @@ namespace OPTCG.Tracker.API.Controllers
 
             if (user == null)
             {
-                // Create new user
-                user = new User
-                {
-                    Email = email,
-                    Username = username ?? GenerateUsernameFromEmail(email),
-                    OAuthProvider = provider,
-                    OAuthProviderUserId = providerUserId,
-                    CreatedDate = DateTime.UtcNow,
-                    LastModified = DateTime.UtcNow
-                };
+                // Check if user with same email already exists (linking multiple OAuth providers)
+                var existingUser = await _context.Users
+                    .FirstOrDefaultAsync(u => u.Email == email);
 
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
+                if (existingUser != null)
+                {
+                    // Update existing user with new OAuth provider
+                    existingUser.OAuthProvider = provider;
+                    existingUser.OAuthProviderUserId = providerUserId;
+                    existingUser.LastModified = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    user = existingUser;
+                }
+                else
+                {
+                    // Create new user
+                    user = new User
+                    {
+                        Email = email,
+                        Username = username ?? GenerateUsernameFromEmail(email),
+                        OAuthProvider = provider,
+                        OAuthProviderUserId = providerUserId,
+                        CreatedDate = DateTime.UtcNow,
+                        LastModified = DateTime.UtcNow
+                    };
+
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
             }
             else
             {
@@ -87,10 +156,9 @@ namespace OPTCG.Tracker.API.Controllers
 
             // Generate JWT token
             var token = _jwtTokenService.GenerateToken(user);
-
-            // Redirect to frontend with token
-            var redirectUrl = $"http://localhost:3000/auth/callback?token={token}";
-            return Redirect(redirectUrl);
+            
+            // Redirect to React dashboard with token
+            return Redirect($"/dashboard?token={token}");
         }
 
         [HttpPost("logout")]
@@ -125,14 +193,14 @@ namespace OPTCG.Tracker.API.Controllers
                     providerUserId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "";
                     break;
                 case "Discord":
-                    email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value ?? "";
-                    username = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value ?? "";
+                    email = claims.FirstOrDefault(c => c.Type == "email")?.Value ?? "";
+                    username = claims.FirstOrDefault(c => c.Type == "username")?.Value ?? "";
                     var discriminator = claims.FirstOrDefault(c => c.Type == "discriminator")?.Value ?? "";
-                    if (!string.IsNullOrEmpty(discriminator))
+                    if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(discriminator))
                     {
                         username += $"#{discriminator}";
                     }
-                    providerUserId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ?? "";
+                    providerUserId = claims.FirstOrDefault(c => c.Type == "id")?.Value ?? "";
                     break;
             }
 
@@ -152,6 +220,41 @@ namespace OPTCG.Tracker.API.Controllers
             }
             
             return cleanUsername.Length > 50 ? cleanUsername.Substring(0, 50) : cleanUsername;
+        }
+
+        private async Task<(string email, string username, string id)> GetDiscordUserInfoAsync(string accessToken)
+        {
+            try
+            {
+                var client = _httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var response = await client.GetAsync("https://discord.com/api/users/@me");
+                if (response.IsSuccessStatusCode)
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    var userInfo = JsonSerializer.Deserialize<JsonElement>(content);
+
+                    var email = userInfo.TryGetProperty("email", out var emailProp) ? emailProp.GetString() ?? "" : "";
+                    var username = userInfo.TryGetProperty("username", out var usernameProp) ? usernameProp.GetString() ?? "" : "";
+                    var discriminator = userInfo.TryGetProperty("discriminator", out var discriminatorProp) ? discriminatorProp.GetString() ?? "" : "";
+                    var id = userInfo.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "";
+
+                    if (!string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(discriminator))
+                    {
+                        username += $"#{discriminator}";
+                    }
+
+                    return (email, username, id);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching Discord user info: {ex.Message}");
+            }
+
+            return ("", "", "");
         }
     }
 }
