@@ -127,6 +127,7 @@ namespace OPTCG.Tracker.API.Controllers
                     existingUser.OAuthProvider = provider;
                     existingUser.OAuthProviderUserId = providerUserId;
                     existingUser.LastModified = DateTime.UtcNow;
+                    existingUser.LastLoginDate = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                     user = existingUser;
                 }
@@ -137,10 +138,13 @@ namespace OPTCG.Tracker.API.Controllers
                     {
                         Email = email,
                         Username = username ?? GenerateUsernameFromEmail(email),
+                        DisplayName = username ?? GenerateUsernameFromEmail(email),
                         OAuthProvider = provider,
                         OAuthProviderUserId = providerUserId,
                         CreatedDate = DateTime.UtcNow,
-                        LastModified = DateTime.UtcNow
+                        LastModified = DateTime.UtcNow,
+                        LastLoginDate = DateTime.UtcNow,
+                        Preferences = "{}"
                     };
 
                     _context.Users.Add(user);
@@ -151,6 +155,7 @@ namespace OPTCG.Tracker.API.Controllers
             {
                 // Update existing user
                 user.LastModified = DateTime.UtcNow;
+                user.LastLoginDate = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
 

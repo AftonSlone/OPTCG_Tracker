@@ -28,6 +28,12 @@ namespace OPTCG.Tracker.Data
                     .IsRequired()
                     .HasMaxLength(100);
 
+                entity.Property(e => e.DisplayName)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Preferences)
+                    .HasMaxLength(1000);
+
                 entity.Property(e => e.OAuthProvider)
                     .IsRequired()
                     .HasMaxLength(50);

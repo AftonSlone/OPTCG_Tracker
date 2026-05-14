@@ -17,9 +17,17 @@ namespace OPTCG.Tracker.Core.Models
         [MaxLength(100)]
         public string Username { get; set; } = string.Empty;
 
+        [MaxLength(100)]
+        public string? DisplayName { get; set; }
+
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime LastModified { get; set; } = DateTime.UtcNow;
+
+        public DateTime? LastLoginDate { get; set; }
+
+        [MaxLength(1000)]
+        public string? Preferences { get; set; }
 
         [Required]
         [MaxLength(50)]
@@ -36,8 +44,8 @@ namespace OPTCG.Tracker.Core.Models
     public enum OAuthProvider
     {
         Google,
-        GitHub,
         Microsoft,
-        Discord
+        Discord,
+        Twitch
     }
 }
