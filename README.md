@@ -10,6 +10,10 @@ A modern .NET Web API for tracking One Piece Card Game match results with OAuth 
 - **Layered Architecture**: Separated Core, Data, and API layers
 - **RESTful API**: Clean endpoints for user management
 - **React Frontend**: Modern React-based login and dashboard pages
+- **Tailwind CSS**: Modern utility-first CSS framework for styling
+- **Dark Mode**: User preference for light/dark theme with localStorage persistence
+- **Slide-out Menu**: Navigation menu with placeholder links to future features
+- **User Profile Management**: Display and edit user display name
 - **Environment Variables**: Secure credential management via .env file
 
 ## Tech Stack
@@ -19,6 +23,7 @@ A modern .NET Web API for tracking One Piece Card Game match results with OAuth 
 - **JWT Authentication** for secure API access
 - **OAuth 2.0** for third-party authentication
 - **React** for frontend UI with React Router
+- **Tailwind CSS** for modern utility-first styling
 - **Swagger/OpenAPI** for API documentation
 
 ## Project Structure
@@ -26,7 +31,10 @@ A modern .NET Web API for tracking One Piece Card Game match results with OAuth 
 - **OPTCG.Tracker.API** - Web API layer with controllers and configuration
 - **OPTCG.Tracker.Core** - Domain models and business logic services
 - **OPTCG.Tracker.Data** - Database context and Entity Framework migrations
-- **optcg-tracker-frontend** - React frontend application
+- **optcg-tracker-frontend** - React frontend application with Tailwind CSS
+  - `src/components` - React components (Login, Dashboard, Menu)
+  - `tailwind.config.js` - Tailwind CSS configuration
+  - `postcss.config.js` - PostCSS configuration for Tailwind
 
 ## Prerequisites
 
@@ -92,13 +100,18 @@ npm install
 npm run build
 ```
 
+The project uses **Tailwind CSS** for styling. Tailwind is already configured with:
+- Custom color palette (purple/indigo theme)
+- Dark mode support (class-based)
+- PostCSS and Autoprefixer for browser compatibility
+
 After building, copy the build output to the API's wwwroot folder:
 
 ```bash
 Copy-Item -Path "build\*" -Destination "..\OPTCG.Tracker.API\wwwroot" -Recurse -Force
 ```
 
-**Note:** The current setup has the React app already built and deployed to wwwroot. You only need to rebuild if you make changes to the React components.
+**Note:** The current setup has the React app already built and deployed to wwwroot with Tailwind CSS. You only need to rebuild if you make changes to the React components.
 
 ### 5. Run the API
 
@@ -136,8 +149,11 @@ Supported providers for `{provider}` parameter:
 - `Id` (int, primary key)
 - `Email` (nvarchar, unique)
 - `Username` (nvarchar, unique)
+- `DisplayName` (nvarchar, nullable) - User's preferred display name
 - `CreatedDate` (datetime)
 - `LastModified` (datetime)
+- `LastLoginDate` (datetime, nullable) - Tracks when user last logged in
+- `Preferences` (nvarchar, nullable) - User preferences (JSON string)
 - `OAuthProvider` (nvarchar)
 - `OAuthProviderUserId` (nvarchar)
 
