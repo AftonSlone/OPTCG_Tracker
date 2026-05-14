@@ -41,8 +41,10 @@ namespace OPTCG.Tracker.API.Controllers
                 user.Id,
                 user.Email,
                 user.Username,
+                user.DisplayName,
                 user.CreatedDate,
                 user.LastModified,
+                user.LastLoginDate,
                 user.OAuthProvider
             });
         }
@@ -80,6 +82,12 @@ namespace OPTCG.Tracker.API.Controllers
                 user.Username = request.Username;
             }
 
+            // Update display name if provided
+            if (!string.IsNullOrEmpty(request.DisplayName))
+            {
+                user.DisplayName = request.DisplayName;
+            }
+
             user.LastModified = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -89,8 +97,10 @@ namespace OPTCG.Tracker.API.Controllers
                 user.Id,
                 user.Email,
                 user.Username,
+                user.DisplayName,
                 user.CreatedDate,
                 user.LastModified,
+                user.LastLoginDate,
                 user.OAuthProvider
             });
         }
@@ -99,5 +109,6 @@ namespace OPTCG.Tracker.API.Controllers
     public class UpdateProfileRequest
     {
         public string Username { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
     }
 }
