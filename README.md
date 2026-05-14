@@ -169,6 +169,45 @@ dotnet ef migrations add MigrationName --project ../OPTCG.Tracker.Data
 dotnet ef database update --project ../OPTCG.Tracker.Data
 ```
 
+## Testing
+
+### Backend Tests
+The project includes unit and integration tests for the .NET API using xUnit.
+
+**Run backend tests:**
+```bash
+dotnet test OPTCG.Tracker.Tests\OPTCG.Tracker.Tests.csproj
+```
+
+**Test Coverage:**
+- UserController tests (profile retrieval, profile updates)
+- AuthController tests (OAuth login flow, username generation, logout)
+
+**Testing Packages:**
+- xUnit - Test framework
+- Moq - Mocking framework
+- Microsoft.EntityFrameworkCore.InMemory - In-memory database for testing
+- Microsoft.AspNetCore.Mvc.Testing - Integration testing
+
+### Frontend Tests
+The React frontend includes component tests using React Testing Library.
+
+**Run frontend tests:**
+```bash
+cd optcg-tracker-frontend
+npm test
+```
+
+**Test Coverage:**
+- Login component tests (renders correctly, OAuth links)
+- Dashboard component tests (profile display, editing functionality)
+- Menu component tests (navigation items, dark mode toggle)
+
+**Testing Packages:**
+- @testing-library/react - React component testing
+- @testing-library/jest-dom - Jest DOM matchers
+- @testing-library/user-event - User interaction simulation
+
 ## Security Notes
 
 - JWT secret key should be changed in production

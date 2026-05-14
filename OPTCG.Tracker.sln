@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OPTCG.Tracker.Core", "OPTCG
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OPTCG.Tracker.Data", "OPTCG.Tracker.Data\OPTCG.Tracker.Data.csproj", "{7D07D004-44EB-45E4-AB06-3F2FE6E40FAB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OPTCG.Tracker.Tests", "OPTCG.Tracker.Tests\OPTCG.Tracker.Tests.csproj", "{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{7D07D004-44EB-45E4-AB06-3F2FE6E40FAB}.Release|x64.Build.0 = Release|Any CPU
 		{7D07D004-44EB-45E4-AB06-3F2FE6E40FAB}.Release|x86.ActiveCfg = Release|Any CPU
 		{7D07D004-44EB-45E4-AB06-3F2FE6E40FAB}.Release|x86.Build.0 = Release|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Debug|x64.Build.0 = Debug|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Debug|x86.Build.0 = Debug|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Release|x64.ActiveCfg = Release|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Release|x64.Build.0 = Release|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Release|x86.ActiveCfg = Release|Any CPU
+		{BA6F19AA-CAC9-43C3-BB8E-29A21A7CEB5F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
