@@ -10,6 +10,7 @@ namespace OPTCG.Tracker.Data
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<Deck> Decks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -46,6 +47,28 @@ namespace OPTCG.Tracker.Data
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.HasIndex(e => e.Username).IsUnique();
                 entity.HasIndex(e => new { e.OAuthProvider, e.OAuthProviderUserId }).IsUnique();
+            });
+
+            // Configure Deck entity
+            modelBuilder.Entity<Deck>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.UserId)
+                    .IsRequired();
+
+                // Create foreign key relationship
+                entity.HasOne(d => d.User)
+                    .WithMany()
+                    .HasForeignKey(d => d.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Create index for UserId for faster queries
+                entity.HasIndex(e => e.UserId);
             });
         }
     }
