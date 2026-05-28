@@ -103,17 +103,14 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
           <label htmlFor="opponentLeader" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Opponent Leader
           </label>
-          <input
+          <select
             id="opponentLeader"
-            type="text"
             name="opponentLeader"
             value={formData.opponentLeader}
             onChange={handleChange}
-            placeholder="Select or type leader name"
-            list="leaderOptions"
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
-          />
-          <datalist id="leaderOptions">
+          >
+            <option value="">Select a leader</option>
             {loadingLeaders ? (
               <option value="" disabled>Loading leaders...</option>
             ) : (
@@ -123,7 +120,7 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
                 </option>
               ))
             )}
-          </datalist>
+          </select>
         </div>
 
         <div>
