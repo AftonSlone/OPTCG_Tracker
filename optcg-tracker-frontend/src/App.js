@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Menu from './components/Menu';
+import DeckList from './components/DeckList';
 import './index.css';
 
 function App() {
@@ -64,6 +65,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/decks" element={<DeckList />} />
         </Routes>
       </div>
     </Router>

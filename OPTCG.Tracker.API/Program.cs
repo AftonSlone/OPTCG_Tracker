@@ -49,13 +49,22 @@ var authSettings = builder.Configuration.GetSection("Authentication");
 var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured");
 var key = Encoding.UTF8.GetBytes(secretKey);
 
+// Add data protection for OAuth correlation cookies
+builder.Services.AddDataProtection();
+
 var authenticationBuilder = builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 })
-.AddCookie()
+.AddCookie(options =>
+{
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+})
 .AddJwtBearer(options =>
 {
     options.RequireHttpsMetadata = false;
@@ -100,6 +109,8 @@ if (!string.IsNullOrEmpty(twitchClientId) && !string.IsNullOrEmpty(twitchClientS
         options.CallbackPath = "/signin-twitch";
         options.Scope.Add("user:read:email");
         options.SaveTokens = true;
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.None;
         
         options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
         {
@@ -160,6 +171,8 @@ if (!string.IsNullOrEmpty(discordClientId) && !string.IsNullOrEmpty(discordClien
         options.Scope.Add("identify");
         options.Scope.Add("email");
         options.SaveTokens = true;
+        options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+        options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.None;
         
         // Custom event handler to extract user info from token response
         options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
