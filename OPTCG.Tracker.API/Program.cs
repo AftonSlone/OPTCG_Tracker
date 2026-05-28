@@ -221,22 +221,22 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Enable static files for React app
-app.UseStaticFiles();
+// Enable static files for React app (production only)
+// app.UseStaticFiles();
 
-// Serve React app as SPA
-app.Use(async (context, next) =>
-{
-    if (!context.Request.Path.StartsWithSegments("/api") && 
-        !context.Request.Path.StartsWithSegments("/swagger") &&
-        !context.Request.Path.Value.Contains("."))
-    {
-        context.Response.ContentType = "text/html";
-        await context.Response.SendFileAsync(Path.Combine(builder.Environment.WebRootPath, "index.html"));
-        return;
-    }
-    await next();
-});
+// Serve React app as SPA (production only)
+// app.Use(async (context, next) =>
+// {
+//     if (!context.Request.Path.StartsWithSegments("/api") && 
+//         !context.Request.Path.StartsWithSegments("/swagger") &&
+//         !context.Request.Path.Value.Contains("."))
+//     {
+//         context.Response.ContentType = "text/html";
+//         await context.Response.SendFileAsync(Path.Combine(builder.Environment.WebRootPath, "index.html"));
+//         return;
+//     }
+//     await next();
+// });
 
 app.Run();
 

@@ -161,9 +161,12 @@ namespace OPTCG.Tracker.API.Controllers
 
             // Generate JWT token
             var token = _jwtTokenService.GenerateToken(user);
-            
+
             // Redirect to React dashboard with token
-            return Redirect($"/dashboard?token={token}");
+            // In development, redirect to frontend on port 3000
+            // In production, this should be configured to the frontend URL
+            var frontendUrl = "http://localhost:3000";
+            return Redirect($"{frontendUrl}/dashboard?token={token}");
         }
 
         [HttpPost("logout")]
