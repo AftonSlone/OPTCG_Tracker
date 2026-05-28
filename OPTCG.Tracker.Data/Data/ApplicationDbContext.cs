@@ -13,6 +13,7 @@ namespace OPTCG.Tracker.Data
         public DbSet<Deck> Decks { get; set; }
         public DbSet<Event> Events { get; set; }
         public DbSet<Round> Rounds { get; set; }
+        public DbSet<Leader> Leaders { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -135,6 +136,52 @@ namespace OPTCG.Tracker.Data
                 // Create index for EventId and RoundNumber for faster queries
                 entity.HasIndex(e => e.EventId);
                 entity.HasIndex(e => new { e.EventId, e.RoundNumber });
+            });
+
+            // Configure Leader entity
+            modelBuilder.Entity<Leader>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Name)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.Color1)
+                    .IsRequired()
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.Color2)
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.Life)
+                    .IsRequired();
+
+                entity.Property(e => e.Power)
+                    .IsRequired();
+
+                entity.Property(e => e.Attribute)
+                    .IsRequired()
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.Type)
+                    .IsRequired()
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.CardNumber)
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.Set)
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.Rarity)
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.Effect)
+                    .HasMaxLength(1000);
+
+                // Create index for Name for faster searches
+                entity.HasIndex(e => e.Name);
             });
         }
     }

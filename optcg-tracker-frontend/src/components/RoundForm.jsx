@@ -8,30 +8,12 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
     isWin: false
   });
   const [error, setError] = useState('');
+  const [leaders, setLeaders] = useState([]);
+  const [loadingLeaders, setLoadingLeaders] = useState(true);
 
-  const leaderOptions = [
-    'Luffy',
-    'Zoro',
-    'Nami',
-    'Usopp',
-    'Sanji',
-    'Chopper',
-    'Robin',
-    'Franky',
-    'Brook',
-    'Jinbe',
-    'Law',
-    'Kid',
-    'Katakuri',
-    'Big Mom',
-    'Kaido',
-    'Blackbeard',
-    'Shanks',
-    'Mihawk',
-    'Doflamingo',
-    'Ace',
-    'Sabo'
-  ];
+  useEffect(() => {
+    fetchLeaders();
+  }, []);
 
   useEffect(() => {
     if (editingRound) {
@@ -43,6 +25,20 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
       });
     }
   }, [editingRound]);
+
+  const fetchLeaders = async () => {
+    try {
+      const response = await fetch('/api/leader');
+      if (response.ok) {
+        const data = await response.json();
+        setLeaders(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch leaders:', err);
+    } finally {
+      setLoadingLeaders(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -118,9 +114,13 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
           />
           <datalist id="leaderOptions">
-            {leaderOptions.map(leader => (
-              <option key={leader} value={leader} />
-            ))}
+            {loadingLeaders ? (
+              <option value="" disabled>Loading leaders...</option>
+            ) : (
+              leaders.map(leader => (
+                <option key={leader.id} value={leader.name} />
+              ))
+            )}
           </datalist>
         </div>
 
