@@ -118,7 +118,9 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
               <option value="" disabled>Loading leaders...</option>
             ) : (
               leaders.map(leader => (
-                <option key={leader.id} value={leader.name} />
+                <option key={leader.id} value={leader.name}>
+                  {leader.name} ({leader.cardNumber}) - {leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}
+                </option>
               ))
             )}
           </datalist>
