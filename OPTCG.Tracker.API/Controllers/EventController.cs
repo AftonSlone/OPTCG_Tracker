@@ -110,6 +110,57 @@ namespace OPTCG.Tracker.API.Controllers
         }
 
         /// <summary>
+        /// List user's events with summary data
+        /// </summary>
+        /// <param name="page">Page number (default 1)</param>
+        /// <param name="pageSize">Page size (default 20)</param>
+        /// <returns>List of events with summary data</returns>
+        [HttpGet]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> ListEvents([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var events = await _context.Events
+                .Where(e => e.UserId == int.Parse(userId))
+                .OrderByDescending(e => e.Date)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(e => new
+                {
+                    e.Id,
+                    e.Name,
+                    e.Date,
+                    e.DeckId,
+                    e.FinalResult,
+                    e.IsFinalized,
+                    RoundCount = _context.Rounds.Count(r => r.EventId == e.Id)
+                })
+                .ToListAsync();
+
+            var totalCount = await _context.Events
+                .CountAsync(e => e.UserId == int.Parse(userId));
+
+            return Ok(new
+            {
+                events,
+                pagination = new
+                {
+                    page,
+                    pageSize,
+                    totalCount,
+                    totalPages = (int)Math.Ceiling((double)totalCount / pageSize)
+                }
+            });
+        }
+
+        /// <summary>
         /// Get event by ID with all rounds
         /// </summary>
         /// <param name="id">Event ID</param>
