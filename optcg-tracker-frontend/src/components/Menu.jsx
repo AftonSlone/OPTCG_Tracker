@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function Menu({ isOpen, onClose, darkMode, toggleDarkMode }) {
+  const navigate = useNavigate();
   return (
     <div 
       className={`fixed inset-0 bg-black/50 z-[999] transition-opacity duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`} 
@@ -30,7 +32,7 @@ function Menu({ isOpen, onClose, darkMode, toggleDarkMode }) {
             Dashboard
           </a>
           
-          <button className="flex items-center gap-3 w-full p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all hover:translate-x-[-5px] text-left">
+          <button onClick={() => { navigate('/decks'); onClose(); }} className="flex items-center gap-3 w-full p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all hover:translate-x-[-5px] text-left">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M2 6h20v2H2V6zm0 5h20v2H2v-2zm0 5h20v2H2v-2z"/>
             </svg>
