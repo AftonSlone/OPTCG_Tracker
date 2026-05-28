@@ -4,6 +4,7 @@ import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Menu from './components/Menu';
 import DeckList from './components/DeckList';
+import EventForm from './components/EventForm';
 import './index.css';
 
 function App() {
@@ -66,6 +67,7 @@ function App() {
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/decks" element={<DeckList />} />
+          <Route path="/event/create" element={<EventForm />} />
         </Routes>
       </div>
     </Router>
