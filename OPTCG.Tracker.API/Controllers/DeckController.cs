@@ -21,7 +21,7 @@ namespace OPTCG.Tracker.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateDeck([FromBody] CreateDeckRequest request)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst("id")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -52,7 +52,7 @@ namespace OPTCG.Tracker.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetDecks()
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst("id")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -78,7 +78,7 @@ namespace OPTCG.Tracker.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateDeck(int id, [FromBody] UpdateDeckRequest request)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst("id")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -111,7 +111,7 @@ namespace OPTCG.Tracker.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDeck(int id)
         {
-            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userId = User.FindFirst("id")?.Value ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userId))
             {
