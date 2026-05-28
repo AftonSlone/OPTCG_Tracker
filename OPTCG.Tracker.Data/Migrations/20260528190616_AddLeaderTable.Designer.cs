@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OPTCG.Tracker.Data;
 
@@ -11,9 +12,11 @@ using OPTCG.Tracker.Data;
 namespace OPTCG.Tracker.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260528190616_AddLeaderTable")]
+    partial class AddLeaderTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,9 +39,6 @@ namespace OPTCG.Tracker.Data.Migrations
                     b.Property<DateTime>("LastModified")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("LeaderId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -48,8 +48,6 @@ namespace OPTCG.Tracker.Data.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LeaderId");
 
                     b.HasIndex("UserId");
 
@@ -271,17 +269,11 @@ namespace OPTCG.Tracker.Data.Migrations
 
             modelBuilder.Entity("OPTCG.Tracker.Core.Models.Deck", b =>
                 {
-                    b.HasOne("OPTCG.Tracker.Core.Models.Leader", "Leader")
-                        .WithMany()
-                        .HasForeignKey("LeaderId");
-
                     b.HasOne("OPTCG.Tracker.Core.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Leader");
 
                     b.Navigation("User");
                 });

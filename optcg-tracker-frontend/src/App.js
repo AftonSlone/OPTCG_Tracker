@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard';
 import Menu from './components/Menu';
 import DeckList from './components/DeckList';
 import EventForm from './components/EventForm';
+import EventDetail from './components/EventDetail';
 import './index.css';
 
 function App() {
@@ -68,6 +69,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/decks" element={<DeckList />} />
           <Route path="/event/create" element={<EventForm />} />
+          <Route path="/event/:eventId" element={<EventDetail />} />
         </Routes>
       </div>
     </Router>

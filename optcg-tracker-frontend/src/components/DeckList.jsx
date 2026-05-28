@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function DeckList() {
@@ -225,6 +225,72 @@ function DeckForm({ deck, onSubmit, onCancel }) {
   const [name, setName] = useState(deck?.name || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [leaders, setLeaders] = useState([]);
+  const [loadingLeaders, setLoadingLeaders] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedLeaderId, setSelectedLeaderId] = useState(deck?.leaderId || null);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    fetchLeaders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (deck?.leaderId) {
+      setSelectedLeaderId(deck.leaderId);
+      const leader = leaders.find(l => l.id === deck.leaderId);
+      if (leader) {
+        setSearchTerm(`${leader.name} (${leader.cardNumber}) - ${leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}`);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deck?.leaderId, leaders]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchLeaders = async () => {
+    try {
+      const response = await fetch('/api/leader');
+      if (response.ok) {
+        const data = await response.json();
+        setLeaders(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch leaders:', err);
+    } finally {
+      setLoadingLeaders(false);
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setShowDropdown(true);
+  };
+
+  const handleLeaderSelect = (leader) => {
+    const selectedValue = `${leader.name} (${leader.cardNumber}) - ${leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}`;
+    setSelectedLeaderId(leader.id);
+    setSearchTerm(selectedValue);
+    setShowDropdown(false);
+  };
+
+  const filteredLeaders = leaders.filter(leader =>
+    leader.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leader.cardNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leader.color1?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leader.color2?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -247,7 +313,10 @@ function DeckForm({ deck, onSubmit, onCancel }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ name: name.trim() })
+        body: JSON.stringify({ 
+          name: name.trim(),
+          leaderId: selectedLeaderId
+        })
       });
 
       if (response.ok) {
@@ -289,6 +358,39 @@ function DeckForm({ deck, onSubmit, onCancel }) {
             maxLength="100"
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
+        </div>
+
+        <div ref={dropdownRef} className="mb-6 relative">
+          <label className="block text-gray-700 dark:text-gray-300 font-semibold mb-2">
+            Leader
+          </label>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Search or select a leader"
+            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+          {showDropdown && (
+            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {loadingLeaders ? (
+                <div className="px-4 py-3 text-gray-500 dark:text-gray-400">Loading leaders...</div>
+              ) : filteredLeaders.length === 0 ? (
+                <div className="px-4 py-3 text-gray-500 dark:text-gray-400">No leaders found</div>
+              ) : (
+                filteredLeaders.map(leader => (
+                  <div
+                    key={leader.id}
+                    onClick={() => handleLeaderSelect(leader)}
+                    className="px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                  >
+                    {leader.name} ({leader.cardNumber}) - {leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3">

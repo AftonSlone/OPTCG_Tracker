@@ -15,12 +15,17 @@ namespace OPTCG.Tracker.Core.Models
         [Required]
         public int UserId { get; set; }
 
+        public int? LeaderId { get; set; }
+
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
         public DateTime LastModified { get; set; } = DateTime.UtcNow;
 
-        // Navigation property
+        // Navigation properties
         [ForeignKey(nameof(UserId))]
         public User? User { get; set; }
+
+        [ForeignKey(nameof(LeaderId))]
+        public Leader? Leader { get; set; }
     }
 }
