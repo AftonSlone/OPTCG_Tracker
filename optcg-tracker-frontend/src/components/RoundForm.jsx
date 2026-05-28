@@ -3,17 +3,41 @@ import React, { useState, useEffect } from 'react';
 function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
     opponentLeader: '',
-    diceRollResult: '',
+    wonDiceRoll: false,
     wentFirst: false,
     isWin: false
   });
   const [error, setError] = useState('');
 
+  const leaderOptions = [
+    'Luffy',
+    'Zoro',
+    'Nami',
+    'Usopp',
+    'Sanji',
+    'Chopper',
+    'Robin',
+    'Franky',
+    'Brook',
+    'Jinbe',
+    'Law',
+    'Kid',
+    'Katakuri',
+    'Big Mom',
+    'Kaido',
+    'Blackbeard',
+    'Shanks',
+    'Mihawk',
+    'Doflamingo',
+    'Ace',
+    'Sabo'
+  ];
+
   useEffect(() => {
     if (editingRound) {
       setFormData({
         opponentLeader: editingRound.opponentLeader || '',
-        diceRollResult: editingRound.diceRollResult || '',
+        wonDiceRoll: editingRound.diceRollResult === 'won',
         wentFirst: editingRound.wentFirst || false,
         isWin: editingRound.isWin || false
       });
@@ -39,13 +63,20 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
         : `/api/event/${eventId}/round`;
       const method = editingRound ? 'PUT' : 'POST';
 
+      const submissionData = {
+        opponentLeader: formData.opponentLeader,
+        diceRollResult: formData.wonDiceRoll ? 'won' : 'lost',
+        wentFirst: formData.wentFirst,
+        isWin: formData.isWin
+      };
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submissionData)
       });
 
       if (response.ok) {
@@ -82,47 +113,60 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
             name="opponentLeader"
             value={formData.opponentLeader}
             onChange={handleChange}
-            placeholder="e.g., Luffy, Zoro, Nami"
+            placeholder="Select or type leader name"
+            list="leaderOptions"
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
           />
+          <datalist id="leaderOptions">
+            {leaderOptions.map(leader => (
+              <option key={leader} value={leader} />
+            ))}
+          </datalist>
         </div>
 
         <div>
-          <label htmlFor="diceRollResult" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Dice Roll Result
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                name="wonDiceRoll"
+                checked={formData.wonDiceRoll}
+                onChange={handleChange}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-red-300 peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+            </div>
+            <span className="text-gray-700 dark:text-gray-300 font-medium">Won Dice Roll</span>
           </label>
-          <input
-            id="diceRollResult"
-            type="text"
-            name="diceRollResult"
-            value={formData.diceRollResult}
-            onChange={handleChange}
-            placeholder="e.g., 6, 1-6"
-            className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
-          />
         </div>
 
         <div className="flex items-center gap-6">
           <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              name="wentFirst"
-              checked={formData.wentFirst}
-              onChange={handleChange}
-              className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-            />
+            <div className="relative">
+              <input
+                type="checkbox"
+                name="wentFirst"
+                checked={formData.wentFirst}
+                onChange={handleChange}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-red-300 peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+            </div>
             <span className="text-gray-700 dark:text-gray-300 font-medium">Went First</span>
           </label>
 
           <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              name="isWin"
-              checked={formData.isWin}
-              onChange={handleChange}
-              className="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-            />
-            <span className="text-gray-700 dark:text-gray-300 font-medium">Win</span>
+            <div className="relative">
+              <input
+                type="checkbox"
+                name="isWin"
+                checked={formData.isWin}
+                onChange={handleChange}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-red-300 peer-focus:ring-2 peer-focus:ring-green-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+            </div>
+            <span className="text-gray-700 dark:text-gray-300 font-medium">Won Match</span>
           </label>
         </div>
 
