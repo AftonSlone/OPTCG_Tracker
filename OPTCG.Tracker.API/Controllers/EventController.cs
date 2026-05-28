@@ -312,11 +312,6 @@ namespace OPTCG.Tracker.API.Controllers
                 return NotFound();
             }
 
-            if (eventEntity.IsFinalized)
-            {
-                return BadRequest(new { message = "Cannot update rounds in a finalized event" });
-            }
-
             var round = await _context.Rounds
                 .FirstOrDefaultAsync(r => r.Id == roundId && r.EventId == eventId);
 
@@ -373,11 +368,6 @@ namespace OPTCG.Tracker.API.Controllers
             if (eventEntity == null)
             {
                 return NotFound();
-            }
-
-            if (eventEntity.IsFinalized)
-            {
-                return BadRequest(new { message = "Cannot delete rounds from a finalized event" });
             }
 
             var round = await _context.Rounds
@@ -448,6 +438,98 @@ namespace OPTCG.Tracker.API.Controllers
                 eventEntity.CreatedDate,
                 eventEntity.LastModified
             });
+        }
+
+        /// <summary>
+        /// Unfinalize an event to allow editing
+        /// </summary>
+        /// <param name="eventId">Event ID</param>
+        /// <returns>Unfinalized event</returns>
+        [HttpPut("{eventId}/unfinalize")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UnfinalizeEvent(int eventId)
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var eventEntity = await _context.Events
+                .FirstOrDefaultAsync(e => e.Id == eventId && e.UserId == int.Parse(userId));
+
+            if (eventEntity == null)
+            {
+                return NotFound();
+            }
+
+            if (!eventEntity.IsFinalized)
+            {
+                return BadRequest(new { message = "Event is not finalized" });
+            }
+
+            eventEntity.IsFinalized = false;
+            eventEntity.FinalResult = null;
+            eventEntity.LastModified = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                eventEntity.Id,
+                eventEntity.Name,
+                eventEntity.Date,
+                eventEntity.UserId,
+                eventEntity.DeckId,
+                eventEntity.FinalResult,
+                eventEntity.IsFinalized,
+                eventEntity.CreatedDate,
+                eventEntity.LastModified
+            });
+        }
+
+        /// <summary>
+        /// Delete an event and all its rounds
+        /// </summary>
+        /// <param name="id">Event ID</param>
+        /// <returns>No content</returns>
+        [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteEvent(int id)
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized();
+            }
+
+            var eventEntity = await _context.Events
+                .Include(e => e.Rounds)
+                .FirstOrDefaultAsync(e => e.Id == id && e.UserId == int.Parse(userId));
+
+            if (eventEntity == null)
+            {
+                return NotFound();
+            }
+
+            // Delete all rounds associated with the event
+            if (eventEntity.Rounds != null && eventEntity.Rounds.Any())
+            {
+                _context.Rounds.RemoveRange(eventEntity.Rounds);
+            }
+
+            // Delete the event
+            _context.Events.Remove(eventEntity);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
     }
 

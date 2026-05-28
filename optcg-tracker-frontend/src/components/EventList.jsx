@@ -67,6 +67,32 @@ function EventList() {
     navigate(`/event/${eventId}`);
   };
 
+  const handleDeleteEvent = async (eventId, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('jwtToken');
+      const response = await fetch(`/api/event/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        // Refresh the event list
+        fetchEvents();
+      } else {
+        setError('Failed to delete event');
+      }
+    } catch (err) {
+      setError('Error deleting event');
+    }
+  };
+
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
   };
@@ -171,7 +197,16 @@ function EventList() {
                       )}
                     </div>
                   </div>
-                  <div className="ml-4">
+                  <div className="flex items-center gap-2 ml-4">
+                    <button
+                      onClick={(e) => handleDeleteEvent(event.id, e)}
+                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-all"
+                      title="Delete event"
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                      </svg>
+                    </button>
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="text-gray-400">
                       <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
                     </svg>

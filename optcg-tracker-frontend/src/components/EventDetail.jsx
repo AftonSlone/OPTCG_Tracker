@@ -99,6 +99,31 @@ function EventDetail() {
     }
   };
 
+  const handleUnfinalizeEvent = async () => {
+    if (!window.confirm('Are you sure you want to unfinalize this event? This will allow you to edit rounds again.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('jwtToken');
+      const response = await fetch(`/api/event/${eventId}/unfinalize`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        fetchEvent();
+      } else {
+        const data = await response.json();
+        setError(data.message || 'Failed to unfinalize event');
+      }
+    } catch (err) {
+      setError('Error unfinalizing event');
+    }
+  };
+
   const handleRoundFormClose = () => {
     setShowRoundForm(false);
     setEditingRound(null);
@@ -178,6 +203,15 @@ function EventDetail() {
               Finalize Event
             </button>
           )}
+
+          {event.isFinalized && (
+            <button
+              onClick={handleUnfinalizeEvent}
+              className="w-full px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white font-medium rounded-lg hover:from-yellow-700 hover:to-orange-700 transition-all hover:scale-105 shadow-lg"
+            >
+              Unfinalize Event
+            </button>
+          )}
         </div>
 
         {showRoundForm && (
@@ -245,22 +279,20 @@ function EventDetail() {
                         </p>
                       )}
                     </div>
-                    {!event.isFinalized && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditRound(round)}
-                          className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteRound(round.id)}
-                          className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditRound(round)}
+                        className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRound(round.id)}
+                        className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

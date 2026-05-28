@@ -13,40 +13,53 @@ function Dashboard() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tokenFromUrl = urlParams.get('token');
-    
+
+    console.log('Dashboard useEffect - tokenFromUrl:', tokenFromUrl ? 'found' : 'not found');
+
     if (tokenFromUrl) {
       localStorage.setItem('jwtToken', tokenFromUrl);
       window.history.replaceState({}, document.title, window.location.pathname);
+      console.log('Token stored in localStorage');
     }
-    
+
     fetchUserProfile();
   }, []);
 
   const fetchUserProfile = async () => {
     const storedToken = localStorage.getItem('jwtToken');
-    
+
+    console.log('fetchUserProfile - storedToken:', storedToken ? 'found' : 'not found');
+
     if (!storedToken) {
       setError('No authentication token found. Please login again.');
       setLoading(false);
       return;
     }
-    
+
     try {
+      console.log('Fetching /api/user/profile...');
       const response = await fetch('/api/user/profile', {
         headers: {
           'Authorization': `Bearer ${storedToken}`
         }
       });
-      
+
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
       if (response.ok) {
         const userData = await response.json();
+        console.log('User data received:', userData);
         setUser(userData);
         setLoading(false);
       } else {
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
         setError('Failed to load user profile. Please try logging in again.');
         setLoading(false);
       }
     } catch (error) {
+      console.log('Fetch error:', error);
       setError('Error loading profile: ' + error.message);
       setLoading(false);
     }
