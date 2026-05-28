@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using OPTCG.Tracker.API.Controllers;
@@ -12,17 +13,27 @@ using System.Text;
 
 namespace OPTCG.Tracker.Tests
 {
-    public class UserControllerTests
+    public class UserControllerTests : IDisposable
     {
-        private ApplicationDbContext GetInMemoryDbContext()
+        private readonly ApplicationDbContext _context;
+        private readonly IDbContextTransaction _transaction;
+
+        public UserControllerTests()
         {
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=OPTCGTrackerTests;Trusted_Connection=true;MultipleActiveResultSets=true")
                 .Options;
 
-            var context = new ApplicationDbContext(options);
-            context.Database.EnsureCreated();
-            return context;
+            _context = new ApplicationDbContext(options);
+            _context.Database.EnsureCreated();
+            _transaction = _context.Database.BeginTransaction();
+        }
+
+        public void Dispose()
+        {
+            _transaction.Rollback();
+            _transaction.Dispose();
+            _context.Dispose();
         }
 
         private string GenerateJwtToken(int userId)
@@ -48,8 +59,7 @@ namespace OPTCG.Tracker.Tests
         public async Task GetProfile_ReturnsUnauthorized_WhenNoUserId()
         {
             // Arrange
-            var context = GetInMemoryDbContext();
-            var controller = new UserController(context);
+            var controller = new UserController(_context);
             controller.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
             {
                 HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
@@ -66,8 +76,7 @@ namespace OPTCG.Tracker.Tests
         public async Task GetProfile_ReturnsNotFound_WhenUserNotFound()
         {
             // Arrange
-            var context = GetInMemoryDbContext();
-            var controller = new UserController(context);
+            var controller = new UserController(_context);
             
             var claims = new[] { new Claim(ClaimTypes.NameIdentifier, "999") };
             var identity = new ClaimsIdentity(claims);
@@ -92,7 +101,6 @@ namespace OPTCG.Tracker.Tests
         public async Task GetProfile_ReturnsUser_WhenUserExists()
         {
             // Arrange
-            var context = GetInMemoryDbContext();
             var user = new User
             {
                 Email = "test@example.com",
@@ -101,10 +109,10 @@ namespace OPTCG.Tracker.Tests
                 OAuthProvider = "Google",
                 OAuthProviderUserId = "google123"
             };
-            context.Users.Add(user);
-            await context.SaveChangesAsync();
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
-            var controller = new UserController(context);
+            var controller = new UserController(_context);
             
             var claims = new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) };
             var identity = new ClaimsIdentity(claims);
@@ -130,8 +138,7 @@ namespace OPTCG.Tracker.Tests
         public async Task UpdateProfile_ReturnsUnauthorized_WhenNoUserId()
         {
             // Arrange
-            var context = GetInMemoryDbContext();
-            var controller = new UserController(context);
+            var controller = new UserController(_context);
             controller.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
             {
                 HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
@@ -154,8 +161,6 @@ namespace OPTCG.Tracker.Tests
         public async Task UpdateProfile_ReturnsBadRequest_WhenUsernameTaken()
         {
             // Arrange
-            var context = GetInMemoryDbContext();
-            
             var user1 = new User
             {
                 Email = "user1@example.com",
@@ -171,10 +176,10 @@ namespace OPTCG.Tracker.Tests
                 OAuthProviderUserId = "google2"
             };
             
-            context.Users.AddRange(user1, user2);
-            await context.SaveChangesAsync();
+            _context.Users.AddRange(user1, user2);
+            await _context.SaveChangesAsync();
 
-            var controller = new UserController(context);
+            var controller = new UserController(_context);
             
             var claims = new[] { new Claim(ClaimTypes.NameIdentifier, user1.Id.ToString()) };
             var identity = new ClaimsIdentity(claims);
@@ -206,8 +211,6 @@ namespace OPTCG.Tracker.Tests
         public async Task UpdateProfile_UpdatesDisplayName_WhenValid()
         {
             // Arrange
-            var context = GetInMemoryDbContext();
-            
             var user = new User
             {
                 Email = "test@example.com",
@@ -217,10 +220,10 @@ namespace OPTCG.Tracker.Tests
                 OAuthProviderUserId = "google123"
             };
             
-            context.Users.Add(user);
-            await context.SaveChangesAsync();
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
 
-            var controller = new UserController(context);
+            var controller = new UserController(_context);
             
             var claims = new[] { new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()) };
             var identity = new ClaimsIdentity(claims);
@@ -248,7 +251,7 @@ namespace OPTCG.Tracker.Tests
             Assert.NotNull(okResult.Value);
 
             // Verify the update
-            var updatedUser = await context.Users.FindAsync(user.Id);
+            var updatedUser = await _context.Users.FindAsync(user.Id);
             Assert.Equal("New Display Name", updatedUser.DisplayName);
         }
     }
