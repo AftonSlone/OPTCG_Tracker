@@ -32,6 +32,7 @@ namespace OPTCG.Tracker.API.Controllers
             {
                 Name = request.Name,
                 UserId = int.Parse(userId),
+                LeaderId = request.LeaderId,
                 CreatedDate = DateTime.UtcNow,
                 LastModified = DateTime.UtcNow
             };
@@ -44,6 +45,7 @@ namespace OPTCG.Tracker.API.Controllers
                 deck.Id,
                 deck.Name,
                 deck.UserId,
+                deck.LeaderId,
                 deck.CreatedDate,
                 deck.LastModified
             });
@@ -60,6 +62,7 @@ namespace OPTCG.Tracker.API.Controllers
             }
 
             var decks = await _context.Decks
+                .Include(d => d.Leader)
                 .Where(d => d.UserId == int.Parse(userId))
                 .OrderBy(d => d.Name)
                 .Select(d => new
@@ -67,6 +70,15 @@ namespace OPTCG.Tracker.API.Controllers
                     d.Id,
                     d.Name,
                     d.UserId,
+                    d.LeaderId,
+                    Leader = d.Leader != null ? new
+                    {
+                        d.Leader.Id,
+                        d.Leader.Name,
+                        d.Leader.CardNumber,
+                        d.Leader.Color1,
+                        d.Leader.Color2
+                    } : null,
                     d.CreatedDate,
                     d.LastModified
                 })
@@ -94,6 +106,7 @@ namespace OPTCG.Tracker.API.Controllers
             }
 
             deck.Name = request.Name;
+            deck.LeaderId = request.LeaderId;
             deck.LastModified = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -103,6 +116,7 @@ namespace OPTCG.Tracker.API.Controllers
                 deck.Id,
                 deck.Name,
                 deck.UserId,
+                deck.LeaderId,
                 deck.CreatedDate,
                 deck.LastModified
             });
@@ -136,10 +150,12 @@ namespace OPTCG.Tracker.API.Controllers
     public class CreateDeckRequest
     {
         public string Name { get; set; } = string.Empty;
+        public int? LeaderId { get; set; }
     }
 
     public class UpdateDeckRequest
     {
         public string Name { get; set; } = string.Empty;
+        public int? LeaderId { get; set; }
     }
 }
