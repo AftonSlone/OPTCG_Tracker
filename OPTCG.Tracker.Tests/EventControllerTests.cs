@@ -695,5 +695,514 @@ namespace OPTCG.Tracker.Tests
             var createdResult = Assert.IsType<CreatedAtActionResult>(result);
             Assert.NotNull(createdResult.Value);
         }
+
+        [Fact]
+        public async Task AddRound_ReturnsUnauthorized_WhenNoUserId()
+        {
+            // Arrange
+            var controller = new EventController(_context);
+            controller.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext
+            {
+                HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext()
+            };
+
+            var request = new CreateRoundRequest
+            {
+                OpponentLeader = "Luffy",
+                IsWin = true
+            };
+
+            // Act
+            var result = await controller.AddRound(1, request);
+
+            // Assert
+            Assert.IsType<UnauthorizedResult>(result);
+        }
+
+        [Fact]
+        public async Task AddRound_ReturnsNotFound_WhenEventDoesNotExist()
+        {
+            // Arrange
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var controller = new EventController(_context);
+            SetUserContext(controller, user.Id);
+
+            var request = new CreateRoundRequest
+            {
+                OpponentLeader = "Luffy",
+                IsWin = true
+            };
+
+            // Act
+            var result = await controller.AddRound(999, request);
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Fact]
+        public async Task AddRound_ReturnsBadRequest_WhenEventIsFinalized()
+        {
+            // Arrange
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var deck = new Deck
+            {
+                Name = "Test Deck",
+                UserId = user.Id
+            };
+            _context.Decks.Add(deck);
+            await _context.SaveChangesAsync();
+
+            var eventEntity = new Event
+            {
+                Name = "Test Event",
+                Date = DateTime.UtcNow,
+                UserId = user.Id,
+                DeckId = deck.Id,
+                IsFinalized = true
+            };
+            _context.Events.Add(eventEntity);
+            await _context.SaveChangesAsync();
+
+            var controller = new EventController(_context);
+            SetUserContext(controller, user.Id);
+
+            var request = new CreateRoundRequest
+            {
+                OpponentLeader = "Luffy",
+                IsWin = true
+            };
+
+            // Act
+            var result = await controller.AddRound(eventEntity.Id, request);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.NotNull(badRequestResult.Value);
+        }
+
+        [Fact]
+        public async Task AddRound_AutoIncrementsRoundNumber()
+        {
+            // Arrange
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var deck = new Deck
+            {
+                Name = "Test Deck",
+                UserId = user.Id
+            };
+            _context.Decks.Add(deck);
+            await _context.SaveChangesAsync();
+
+            var eventEntity = new Event
+            {
+                Name = "Test Event",
+                Date = DateTime.UtcNow,
+                UserId = user.Id,
+                DeckId = deck.Id
+            };
+            _context.Events.Add(eventEntity);
+            await _context.SaveChangesAsync();
+
+            var round1 = new Round
+            {
+                EventId = eventEntity.Id,
+                RoundNumber = 1
+            };
+            _context.Rounds.Add(round1);
+            await _context.SaveChangesAsync();
+
+            var controller = new EventController(_context);
+            SetUserContext(controller, user.Id);
+
+            var request = new CreateRoundRequest
+            {
+                OpponentLeader = "Zoro",
+                IsWin = false
+            };
+
+            // Act
+            var result = await controller.AddRound(eventEntity.Id, request);
+
+            // Assert
+            var createdResult = Assert.IsType<CreatedAtActionResult>(result);
+            Assert.NotNull(createdResult.Value);
+
+            var rounds = await _context.Rounds.Where(r => r.EventId == eventEntity.Id).ToListAsync();
+            Assert.Equal(2, rounds.Count);
+            Assert.Equal(2, rounds[1].RoundNumber);
+        }
+
+        [Fact]
+        public async Task UpdateRound_ReturnsBadRequest_WhenEventIsFinalized()
+        {
+            // Arrange
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var deck = new Deck
+            {
+                Name = "Test Deck",
+                UserId = user.Id
+            };
+            _context.Decks.Add(deck);
+            await _context.SaveChangesAsync();
+
+            var eventEntity = new Event
+            {
+                Name = "Test Event",
+                Date = DateTime.UtcNow,
+                UserId = user.Id,
+                DeckId = deck.Id,
+                IsFinalized = true
+            };
+            _context.Events.Add(eventEntity);
+            await _context.SaveChangesAsync();
+
+            var round = new Round
+            {
+                EventId = eventEntity.Id,
+                RoundNumber = 1,
+                OpponentLeader = "Luffy"
+            };
+            _context.Rounds.Add(round);
+            await _context.SaveChangesAsync();
+
+            var controller = new EventController(_context);
+            SetUserContext(controller, user.Id);
+
+            var request = new UpdateRoundRequest
+            {
+                OpponentLeader = "Zoro",
+                IsWin = true
+            };
+
+            // Act
+            var result = await controller.UpdateRound(eventEntity.Id, round.Id, request);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.NotNull(badRequestResult.Value);
+        }
+
+        [Fact]
+        public async Task UpdateRound_UpdatesRound_WhenValid()
+        {
+            // Arrange
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var deck = new Deck
+            {
+                Name = "Test Deck",
+                UserId = user.Id
+            };
+            _context.Decks.Add(deck);
+            await _context.SaveChangesAsync();
+
+            var eventEntity = new Event
+            {
+                Name = "Test Event",
+                Date = DateTime.UtcNow,
+                UserId = user.Id,
+                DeckId = deck.Id
+            };
+            _context.Events.Add(eventEntity);
+            await _context.SaveChangesAsync();
+
+            var round = new Round
+            {
+                EventId = eventEntity.Id,
+                RoundNumber = 1,
+                OpponentLeader = "Luffy",
+                IsWin = false
+            };
+            _context.Rounds.Add(round);
+            await _context.SaveChangesAsync();
+
+            var controller = new EventController(_context);
+            SetUserContext(controller, user.Id);
+
+            var request = new UpdateRoundRequest
+            {
+                OpponentLeader = "Zoro",
+                DiceRollResult = "6",
+                WentFirst = true,
+                IsWin = true
+            };
+
+            // Act
+            var result = await controller.UpdateRound(eventEntity.Id, round.Id, request);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult.Value);
+
+            var updatedRound = await _context.Rounds.FirstOrDefaultAsync(r => r.Id == round.Id);
+            Assert.Equal("Zoro", updatedRound.OpponentLeader);
+            Assert.Equal("6", updatedRound.DiceRollResult);
+            Assert.True(updatedRound.WentFirst);
+            Assert.True(updatedRound.IsWin);
+        }
+
+        [Fact]
+        public async Task DeleteRound_ReturnsBadRequest_WhenEventIsFinalized()
+        {
+            // Arrange
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var deck = new Deck
+            {
+                Name = "Test Deck",
+                UserId = user.Id
+            };
+            _context.Decks.Add(deck);
+            await _context.SaveChangesAsync();
+
+            var eventEntity = new Event
+            {
+                Name = "Test Event",
+                Date = DateTime.UtcNow,
+                UserId = user.Id,
+                DeckId = deck.Id,
+                IsFinalized = true
+            };
+            _context.Events.Add(eventEntity);
+            await _context.SaveChangesAsync();
+
+            var round = new Round
+            {
+                EventId = eventEntity.Id,
+                RoundNumber = 1
+            };
+            _context.Rounds.Add(round);
+            await _context.SaveChangesAsync();
+
+            var controller = new EventController(_context);
+            SetUserContext(controller, user.Id);
+
+            // Act
+            var result = await controller.DeleteRound(eventEntity.Id, round.Id);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.NotNull(badRequestResult.Value);
+        }
+
+        [Fact]
+        public async Task DeleteRound_DeletesRound_WhenValid()
+        {
+            // Arrange
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var deck = new Deck
+            {
+                Name = "Test Deck",
+                UserId = user.Id
+            };
+            _context.Decks.Add(deck);
+            await _context.SaveChangesAsync();
+
+            var eventEntity = new Event
+            {
+                Name = "Test Event",
+                Date = DateTime.UtcNow,
+                UserId = user.Id,
+                DeckId = deck.Id
+            };
+            _context.Events.Add(eventEntity);
+            await _context.SaveChangesAsync();
+
+            var round = new Round
+            {
+                EventId = eventEntity.Id,
+                RoundNumber = 1
+            };
+            _context.Rounds.Add(round);
+            await _context.SaveChangesAsync();
+
+            var controller = new EventController(_context);
+            SetUserContext(controller, user.Id);
+
+            // Act
+            var result = await controller.DeleteRound(eventEntity.Id, round.Id);
+
+            // Assert
+            Assert.IsType<NoContentResult>(result);
+
+            var remainingRounds = await _context.Rounds.Where(r => r.EventId == eventEntity.Id).ToListAsync();
+            Assert.Empty(remainingRounds);
+        }
+
+        [Fact]
+        public async Task FinalizeEvent_ReturnsBadRequest_WhenAlreadyFinalized()
+        {
+            // Arrange
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var deck = new Deck
+            {
+                Name = "Test Deck",
+                UserId = user.Id
+            };
+            _context.Decks.Add(deck);
+            await _context.SaveChangesAsync();
+
+            var eventEntity = new Event
+            {
+                Name = "Test Event",
+                Date = DateTime.UtcNow,
+                UserId = user.Id,
+                DeckId = deck.Id,
+                IsFinalized = true,
+                FinalResult = "2-1"
+            };
+            _context.Events.Add(eventEntity);
+            await _context.SaveChangesAsync();
+
+            var controller = new EventController(_context);
+            SetUserContext(controller, user.Id);
+
+            // Act
+            var result = await controller.FinalizeEvent(eventEntity.Id);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.NotNull(badRequestResult.Value);
+        }
+
+        [Fact]
+        public async Task FinalizeEvent_CalculatesFinalResult_WhenValid()
+        {
+            // Arrange
+            var user = new User
+            {
+                Email = "test@example.com",
+                Username = "testuser",
+                OAuthProvider = "Google",
+                OAuthProviderUserId = "google123"
+            };
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            var deck = new Deck
+            {
+                Name = "Test Deck",
+                UserId = user.Id
+            };
+            _context.Decks.Add(deck);
+            await _context.SaveChangesAsync();
+
+            var eventEntity = new Event
+            {
+                Name = "Test Event",
+                Date = DateTime.UtcNow,
+                UserId = user.Id,
+                DeckId = deck.Id,
+                IsFinalized = false
+            };
+            _context.Events.Add(eventEntity);
+            await _context.SaveChangesAsync();
+
+            var round1 = new Round
+            {
+                EventId = eventEntity.Id,
+                RoundNumber = 1,
+                IsWin = true
+            };
+            var round2 = new Round
+            {
+                EventId = eventEntity.Id,
+                RoundNumber = 2,
+                IsWin = true
+            };
+            var round3 = new Round
+            {
+                EventId = eventEntity.Id,
+                RoundNumber = 3,
+                IsWin = false
+            };
+            _context.Rounds.AddRange(round1, round2, round3);
+            await _context.SaveChangesAsync();
+
+            var controller = new EventController(_context);
+            SetUserContext(controller, user.Id);
+
+            // Act
+            var result = await controller.FinalizeEvent(eventEntity.Id);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult.Value);
+
+            var finalizedEvent = await _context.Events.FirstOrDefaultAsync(e => e.Id == eventEntity.Id);
+            Assert.True(finalizedEvent.IsFinalized);
+            Assert.Equal("2-1", finalizedEvent.FinalResult);
+        }
     }
 }
