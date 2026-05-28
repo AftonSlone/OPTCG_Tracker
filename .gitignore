@@ -366,3 +366,9 @@ docker-compose.override.yml
 .env
 .env.local
 .env.*.local
+
+# Windsurf IDE
+.windsurf/
+
+# GitHub (not using GitHub Actions)
+.github/
