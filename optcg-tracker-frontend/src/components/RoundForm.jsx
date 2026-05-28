@@ -119,7 +119,7 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
             ) : (
               leaders.map(leader => (
                 <option key={leader.id} value={leader.name}>
-                  {leader.name} ({leader.cardNumber}) - {leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}
+                  ({leader.cardNumber}) - {leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}
                 </option>
               ))
             )}
