@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
@@ -10,6 +10,9 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
   const [error, setError] = useState('');
   const [leaders, setLeaders] = useState([]);
   const [loadingLeaders, setLoadingLeaders] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     fetchLeaders();
@@ -23,8 +26,20 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
         wentFirst: editingRound.wentFirst || false,
         isWin: editingRound.isWin || false
       });
+      setSearchTerm(editingRound.opponentLeader || '');
     }
   }, [editingRound]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const fetchLeaders = async () => {
     try {
@@ -47,6 +62,25 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
       [name]: type === 'checkbox' ? checked : value
     }));
   };
+
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setShowDropdown(true);
+  };
+
+  const handleLeaderSelect = (leader) => {
+    const selectedValue = `${leader.name} (${leader.cardNumber}) - ${leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}`;
+    setFormData(prev => ({ ...prev, opponentLeader: selectedValue }));
+    setSearchTerm(selectedValue);
+    setShowDropdown(false);
+  };
+
+  const filteredLeaders = leaders.filter(leader =>
+    leader.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leader.cardNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leader.color1?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leader.color2?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,28 +133,39 @@ function RoundForm({ eventId, editingRound, onClose, onSubmit }) {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
+        <div ref={dropdownRef} className="relative">
           <label htmlFor="opponentLeader" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Opponent Leader
           </label>
-          <select
+          <input
             id="opponentLeader"
+            type="text"
             name="opponentLeader"
-            value={formData.opponentLeader}
-            onChange={handleChange}
+            value={searchTerm}
+            onChange={handleSearchChange}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Search or select a leader"
             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
-          >
-            <option value="">Select a leader</option>
-            {loadingLeaders ? (
-              <option value="" disabled>Loading leaders...</option>
-            ) : (
-              leaders.map(leader => (
-                <option key={leader.id} value={`${leader.name} (${leader.cardNumber}) - ${leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}`}>
-                  {leader.name} ({leader.cardNumber}) - {leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}
-                </option>
-              ))
-            )}
-          </select>
+          />
+          {showDropdown && (
+            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {loadingLeaders ? (
+                <div className="px-4 py-3 text-gray-500 dark:text-gray-400">Loading leaders...</div>
+              ) : filteredLeaders.length === 0 ? (
+                <div className="px-4 py-3 text-gray-500 dark:text-gray-400">No leaders found</div>
+              ) : (
+                filteredLeaders.map(leader => (
+                  <div
+                    key={leader.id}
+                    onClick={() => handleLeaderSelect(leader)}
+                    className="px-4 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors"
+                  >
+                    {leader.name} ({leader.cardNumber}) - {leader.color2 ? `${leader.color1}/${leader.color2}` : leader.color1}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         <div>
