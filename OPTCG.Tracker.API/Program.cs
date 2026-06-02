@@ -8,6 +8,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using DotNetEnv;
+using OPTCG.Tracker.API.Services;
 
 // Load environment variables from .env file
 Env.Load();
@@ -17,6 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+
+// Add memory cache
+builder.Services.AddMemoryCache();
 
 // Enable static files
 builder.Services.AddDirectoryBrowser();
@@ -31,6 +35,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register JWT service
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+// Register CardImportService
+builder.Services.AddScoped<CardImportService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -215,6 +222,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();

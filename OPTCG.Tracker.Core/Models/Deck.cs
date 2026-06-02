@@ -26,6 +26,6 @@ namespace OPTCG.Tracker.Core.Models
         public User? User { get; set; }
 
         [ForeignKey(nameof(LeaderId))]
-        public Leader? Leader { get; set; }
+        public Card? Leader { get; set; }
     }
 }

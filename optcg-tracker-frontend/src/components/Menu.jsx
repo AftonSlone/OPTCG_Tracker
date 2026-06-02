@@ -53,7 +53,7 @@ function Menu({ isOpen, onClose, darkMode, toggleDarkMode }) {
             Match History
           </button>
           
-          <button className="flex items-center gap-3 w-full p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all hover:translate-x-[-5px] text-left">
+          <button onClick={() => { navigate('/'); onClose(); }} className="flex items-center gap-3 w-full p-4 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all hover:translate-x-[-5px] text-left">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
             </svg>
