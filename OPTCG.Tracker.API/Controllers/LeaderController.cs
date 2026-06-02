@@ -18,10 +18,11 @@ namespace OPTCG.Tracker.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Leader>>> GetLeaders()
+        public async Task<ActionResult<IEnumerable<Card>>> GetLeaders()
         {
-            var leaders = await _context.Leaders
-                .OrderBy(l => l.Name)
+            var leaders = await _context.Cards
+                .Where(c => c.CardType == "Leader")
+                .OrderBy(c => c.Name)
                 .ToListAsync();
 
             return Ok(leaders);

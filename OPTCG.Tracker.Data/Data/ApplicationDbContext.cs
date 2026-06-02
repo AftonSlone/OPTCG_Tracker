@@ -13,7 +13,7 @@ namespace OPTCG.Tracker.Data
         public DbSet<Deck> Decks { get; set; }
         public DbSet<Event> Events { get; set; }
         public DbSet<Round> Rounds { get; set; }
-        public DbSet<Leader> Leaders { get; set; }
+        public DbSet<Card> Cards { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -70,8 +70,14 @@ namespace OPTCG.Tracker.Data
                     .HasForeignKey(d => d.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                entity.HasOne(d => d.Leader)
+                    .WithMany()
+                    .HasForeignKey(d => d.LeaderId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 // Create index for UserId for faster queries
                 entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.LeaderId);
             });
 
             // Configure Event entity
@@ -138,10 +144,14 @@ namespace OPTCG.Tracker.Data
                 entity.HasIndex(e => new { e.EventId, e.RoundNumber });
             });
 
-            // Configure Leader entity
-            modelBuilder.Entity<Leader>(entity =>
+            // Configure Card entity
+            modelBuilder.Entity<Card>(entity =>
             {
                 entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.CardType)
+                    .IsRequired()
+                    .HasMaxLength(20);
 
                 entity.Property(e => e.Name)
                     .IsRequired()
@@ -153,20 +163,6 @@ namespace OPTCG.Tracker.Data
 
                 entity.Property(e => e.Color2)
                     .HasMaxLength(20);
-
-                entity.Property(e => e.Life)
-                    .IsRequired();
-
-                entity.Property(e => e.Power)
-                    .IsRequired();
-
-                entity.Property(e => e.Attribute)
-                    .IsRequired()
-                    .HasMaxLength(20);
-
-                entity.Property(e => e.Type)
-                    .IsRequired()
-                    .HasMaxLength(100);
 
                 entity.Property(e => e.CardNumber)
                     .HasMaxLength(20);
@@ -180,8 +176,23 @@ namespace OPTCG.Tracker.Data
                 entity.Property(e => e.Effect)
                     .HasMaxLength(1000);
 
-                // Create index for Name for faster searches
+                entity.Property(e => e.Attribute)
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.Type)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.ImageUrl)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.ThumbnailUrl)
+                    .HasMaxLength(500);
+
+                // Create indexes for faster queries
+                entity.HasIndex(e => e.CardType);
                 entity.HasIndex(e => e.Name);
+                entity.HasIndex(e => e.Set);
+                entity.HasIndex(e => new { e.CardType, e.Set });
             });
         }
     }

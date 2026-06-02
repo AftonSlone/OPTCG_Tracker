@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
+import Leaderboard from './components/Leaderboard';
 import Dashboard from './components/Dashboard';
 import Menu from './components/Menu';
 import DeckList from './components/DeckList';
@@ -66,7 +67,8 @@ function App() {
         </header>
         <Menu isOpen={menuOpen} onClose={() => setMenuOpen(false)} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Leaderboard />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/decks" element={<DeckList />} />
           <Route path="/events" element={<EventList />} />
